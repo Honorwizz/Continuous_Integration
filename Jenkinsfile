@@ -6,14 +6,14 @@ pipeline {
         CONTAINER_NAME = "nginx_test"
         HOST_PORT = "9889"
         MD5_EXPECTED = ""
-        TELEGRAM_BOT_TOKEN = "YOUR_TELEGRAM_BOT_TOKEN"
-        TELEGRAM_CHAT_ID = "YOUR_CHAT_ID"
+        TELEGRAM_BOT_TOKEN = credentials('telegram-bot-token')
+        TELEGRAM_CHAT_ID = credentials('telegram_chat_id') 
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/YOUR_REPO.git'
+                git branch: 'main', url: 'https://github.com/Honorwizz/Continuous_Integration.git'
             }
         }
 
@@ -29,7 +29,7 @@ pipeline {
             steps {
                 script {
                     sh 'docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:80 ${IMAGE_NAME}'
-                    sleep 5 // Даем Nginx запуститься
+                    sleep 5
                 }
             }
         }
@@ -60,6 +60,13 @@ pipeline {
             }
         }
 
+        stage('Send Telegram Notification') {
+            steps {
+                script {
+                    sendTelegramMessage("CI/CD успешно выполнен в Jenkins! ✅")
+                }
+            }
+        }
     }
 
     post {
@@ -71,11 +78,15 @@ pipeline {
             }
         }
         failure {
-            sendTelegramMessage("CI упал! Проверьте логи.")
+            sendTelegramMessage("⚠️ Ошибка CI/CD! Проверьте логи в Jenkins.")
         }
     }
 }
 
 def sendTelegramMessage(message) {
-    sh "curl -s -X POST https://api.telegram.org/bot${7397473657:AAGHn2gysmSRPEzebRIdca3ZBe-hxpD6Th4}/sendMessage -d chat_id=${-4604045894} -d text=\"${message}\""
+    sh """
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+        -d chat_id=${TELEGRAM_CHAT_ID} \
+        -d text="${message}"
+    """
 }
