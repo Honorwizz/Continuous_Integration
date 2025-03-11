@@ -6,7 +6,7 @@ pipeline {
         CONTAINER_NAME = "nginx_test"
         HOST_PORT = "9889"
         TELEGRAM_BOT_TOKEN = credentials('telegram-bot-token')
-        TELEGRAM_CHAT_ID = credentials('telegram-chat-id')
+        TELEGRAM_CHAT_ID = credentials('telegram-chat')
     }
 
     stages {
