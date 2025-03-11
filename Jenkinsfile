@@ -7,7 +7,7 @@ pipeline {
         HOST_PORT = "9889"
         MD5_EXPECTED = ""
         TELEGRAM_BOT_TOKEN = credentials('telegram-bot-token')
-        TELEGRAM_CHAT_ID = credentials('telegram_chat_id') 
+        TELEGRAM_CHAT_ID = credentials('telegram-chat-id')
     }
 
     stages {
@@ -20,7 +20,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t ${IMAGE_NAME} .'
+                    sh 'docker build -t $IMAGE_NAME .'
                 }
             }
         }
@@ -28,7 +28,7 @@ pipeline {
         stage('Run Container') {
             steps {
                 script {
-                    sh 'docker run -d --name ${CONTAINER_NAME} -p ${HOST_PORT}:80 ${IMAGE_NAME}'
+                    sh 'docker run -d --name $CONTAINER_NAME -p $HOST_PORT:80 $IMAGE_NAME'
                     sleep 5
                 }
             }
@@ -37,7 +37,7 @@ pipeline {
         stage('Check HTTP Response') {
             steps {
                 script {
-                    def statusCode = sh(script: "curl -o /dev/null -s -w '%{http_code}' http://localhost:${HOST_PORT}", returnStdout: true).trim()
+                    def statusCode = sh(script: "curl -o /dev/null -s -w '%{http_code}' http://localhost:$HOST_PORT", returnStdout: true).trim()
                     if (statusCode != '200') {
                         sendTelegramMessage("Ошибка CI: HTTP-код ${statusCode} (ожидался 200)")
                         error("HTTP response code check failed")
@@ -50,7 +50,7 @@ pipeline {
             steps {
                 script {
                     MD5_EXPECTED = sh(script: "md5sum index.html | awk '{print \$1}'", returnStdout: true).trim()
-                    def MD5_ACTUAL = sh(script: "curl -s http://localhost:${HOST_PORT}/index.html | md5sum | awk '{print \$1}'", returnStdout: true).trim()
+                    def MD5_ACTUAL = sh(script: "curl -s http://localhost:$HOST_PORT/index.html | md5sum | awk '{print \$1}'", returnStdout: true).trim()
 
                     if (MD5_EXPECTED != MD5_ACTUAL) {
                         sendTelegramMessage("Ошибка CI: MD5 суммы не совпадают!")
@@ -72,9 +72,9 @@ pipeline {
     post {
         always {
             script {
-                sh 'docker stop ${CONTAINER_NAME} || true'
-                sh 'docker rm ${CONTAINER_NAME} || true'
-                sh 'docker rmi ${IMAGE_NAME} || true'
+                sh 'docker stop $CONTAINER_NAME || true'
+                sh 'docker rm $CONTAINER_NAME || true'
+                sh 'docker rmi $IMAGE_NAME || true'
             }
         }
         failure {
@@ -84,9 +84,9 @@ pipeline {
 }
 
 def sendTelegramMessage(message) {
-    sh """
-        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-        -d chat_id=${TELEGRAM_CHAT_ID} \
-        -d text="${message}"
-    """
+    sh '''
+        curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
+        -d chat_id=$TELEGRAM_CHAT_ID \
+        -d text="$message"
+    '''
 }
